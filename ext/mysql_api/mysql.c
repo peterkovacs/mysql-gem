@@ -205,6 +205,7 @@ static VALUE make_field_obj(MYSQL_FIELD* f)
     rb_iv_set(obj, "max_length", INT2NUM(f->max_length));
     rb_iv_set(obj, "flags", INT2NUM(f->flags));
     rb_iv_set(obj, "decimals", INT2NUM(f->decimals));
+    rb_iv_set(obj, "charsetnr", INT2NUM(f->charsetnr));
     return obj;
 }
 
@@ -1191,6 +1192,7 @@ static VALUE field_hash(VALUE obj)
     rb_hash_aset(h, rb_str_new2("max_length"), rb_iv_get(obj, "max_length"));
     rb_hash_aset(h, rb_str_new2("flags"), rb_iv_get(obj, "flags"));
     rb_hash_aset(h, rb_str_new2("decimals"), rb_iv_get(obj, "decimals"));
+    rb_hash_aset(h, rb_str_new2("charsetnr"), rb_iv_get(obj, "charsetnr"));
     return h;
 }
 
@@ -1215,6 +1217,7 @@ DefineMysqlFieldMemberMethod(length)
 DefineMysqlFieldMemberMethod(max_length)
 DefineMysqlFieldMemberMethod(flags)
 DefineMysqlFieldMemberMethod(decimals)
+DefineMysqlFieldMemberMethod(charsetnr)
 
 #ifdef IS_NUM
 /*	is_num?	*/
@@ -2147,6 +2150,7 @@ void Init_mysql_api(void)
     rb_define_method(cMysqlField, "max_length", field_max_length, 0);
     rb_define_method(cMysqlField, "flags", field_flags, 0);
     rb_define_method(cMysqlField, "decimals", field_decimals, 0);
+    rb_define_method(cMysqlField, "charsetnr", field_charsetnr, 0);
     rb_define_method(cMysqlField, "hash", field_hash, 0);
     rb_define_method(cMysqlField, "inspect", field_inspect, 0);
 #ifdef IS_NUM
