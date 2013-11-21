@@ -337,6 +337,7 @@ class TC_MysqlRes < Test::Unit::TestCase
     assert_equal(1, f.max_length)
     assert_equal(Mysql::Field::NUM_FLAG|Mysql::Field::PRI_KEY_FLAG|Mysql::Field::PART_KEY_FLAG|Mysql::Field::NOT_NULL_FLAG, f.flags)
     assert_equal(0, f.decimals)
+    assert_equal(63, f.charsetnr) # 63 = binary
     f = @res.fetch_field
     assert_equal("str", f.name)
     assert_equal("t", f.table)
@@ -346,6 +347,7 @@ class TC_MysqlRes < Test::Unit::TestCase
     assert_equal(4, f.max_length)
     assert_equal(0, f.flags)
     assert_equal(0, f.decimals)
+    assert_equal(33, f.charsetnr) # 33 = utf8_general_ci
     f = @res.fetch_field
     assert_equal(nil, f)
   end
@@ -391,6 +393,7 @@ class TC_MysqlRes < Test::Unit::TestCase
       "max_length" => 1,
       "flags" => Mysql::Field::NUM_FLAG|Mysql::Field::PRI_KEY_FLAG|Mysql::Field::PART_KEY_FLAG|Mysql::Field::NOT_NULL_FLAG,
       "decimals" => 0,
+      "charsetnr" => 63, # 63 = binary
     }
     assert_equal(h, f.hash)
     f = @res.fetch_field
@@ -403,6 +406,7 @@ class TC_MysqlRes < Test::Unit::TestCase
       "max_length" => 4,
       "flags" => 0,
       "decimals" => 0,
+      "charsetnr" => 33, # 33 = utf8_general_ci
     }
     assert_equal(h, f.hash)
   end
@@ -752,22 +756,40 @@ class TC_MysqlStmt2 < Test::Unit::TestCase
       @m.query("insert into t values (0),(-1),(127),(-128),(255),(-255),(256)")
       @s.prepare("select i from t")
       @s.execute
-      assert_equal(["\x00"], @s.fetch)
-      assert_equal(["\xff"], @s.fetch)
-      assert_equal(["\x7f"], @s.fetch)
-      assert_equal(["\xff"], @s.fetch)
-      assert_equal(["\xff"], @s.fetch)
-      assert_equal(["\xff"], @s.fetch)
-      assert_equal(["\xff"], @s.fetch)
+      if ''.respond_to?( :force_encoding )
+        assert_equal(["\x00".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+        assert_equal(["\xff".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+        assert_equal(["\x7f".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+        assert_equal(["\xff".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+        assert_equal(["\xff".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+        assert_equal(["\xff".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+        assert_equal(["\xff".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+      else
+        assert_equal(["\x00"], @s.fetch)
+        assert_equal(["\xff"], @s.fetch, ["\xff".encoding, @s.fetch.map(&:encoding)])
+        assert_equal(["\x7f"], @s.fetch)
+        assert_equal(["\xff"], @s.fetch)
+        assert_equal(["\xff"], @s.fetch)
+        assert_equal(["\xff"], @s.fetch)
+        assert_equal(["\xff"], @s.fetch)
+      end
       @m.query("create temporary table t2 (i bit(64))")
       @m.query("insert into t2 values (0),(-1),(4294967296),(18446744073709551615),(18446744073709551616)")
       @s.prepare("select i from t2")
       @s.execute
-      assert_equal(["\x00\x00\x00\x00\x00\x00\x00\x00"], @s.fetch)
-      assert_equal(["\xff\xff\xff\xff\xff\xff\xff\xff"], @s.fetch)
-      assert_equal(["\x00\x00\x00\x01\x00\x00\x00\x00"], @s.fetch)
-      assert_equal(["\xff\xff\xff\xff\xff\xff\xff\xff"], @s.fetch)
-      assert_equal(["\xff\xff\xff\xff\xff\xff\xff\xff"], @s.fetch)
+      if ''.respond_to?( :force_encoding )
+        assert_equal(["\x00\x00\x00\x00\x00\x00\x00\x00".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+        assert_equal(["\xff\xff\xff\xff\xff\xff\xff\xff".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+        assert_equal(["\x00\x00\x00\x01\x00\x00\x00\x00".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+        assert_equal(["\xff\xff\xff\xff\xff\xff\xff\xff".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+        assert_equal(["\xff\xff\xff\xff\xff\xff\xff\xff".force_encoding(Encoding::ASCII_8BIT)], @s.fetch)
+      else
+        assert_equal(["\x00\x00\x00\x00\x00\x00\x00\x00"], @s.fetch)
+        assert_equal(["\xff\xff\xff\xff\xff\xff\xff\xff"], @s.fetch)
+        assert_equal(["\x00\x00\x00\x01\x00\x00\x00\x00"], @s.fetch)
+        assert_equal(["\xff\xff\xff\xff\xff\xff\xff\xff"], @s.fetch)
+        assert_equal(["\xff\xff\xff\xff\xff\xff\xff\xff"], @s.fetch)
+      end
     end
   end
 
